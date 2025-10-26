@@ -61,7 +61,7 @@ router.post('/create-checkout-session', async (req, res) => {
 
     const line_items = [{ price_data, quantity: 1 }];
 
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const clientUrl = process.env.CLIENT_URL || 'https://ngo-frontend1.onrender.com';
     const sessionParams = {
       payment_method_types: ['card'],
       mode: recurring ? 'subscription' : 'payment',
