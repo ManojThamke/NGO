@@ -1,18 +1,9 @@
 // src/pages/DonateSuccess.jsx
 import React, { useEffect, useState } from "react";
 
-/**
- * DonateSuccess.jsx
- * - fetches Stripe checkout session by session_id in the URL
- * - shows animated success tick + donation summary (amount, id, email, date)
- * - copy to clipboard and print options
- *
- * This version avoids mixing `??` and `||` inline to prevent Babel/parser errors.
- */
-
 export default function DonateSuccess() {
   const [loading, setLoading] = useState(true);
-  const [info, setInfo] = useState(null); // raw session object from backend/stripe
+  const [info, setInfo] = useState(null);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
 
@@ -27,8 +18,9 @@ export default function DonateSuccess() {
 
     (async () => {
       try {
-        const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000";
-        const res = await fetch(`${apiBase}/api/donations/session/${sessionId}`);
+        // IMPORTANT: default to your BACKEND URL (not the frontend)
+        const apiBase = import.meta.env.VITE_API_URL || "https://ngo-backend1.onrender.com";
+        const res = await fetch(`${apiBase.replace(/\/$/, "")}/api/donations/session/${sessionId}`);
         if (!res.ok) {
           const j = await res.json().catch(() => ({}));
           setError(j.error || `Server returned ${res.status}`);
@@ -46,10 +38,8 @@ export default function DonateSuccess() {
     })();
   }, []);
 
-  // helpers to derive display values from the session object (avoid inline complex expressions)
   function getPaymentId(session) {
     if (!session) return "—";
-    // prefer payment_intent id, then session id
     if (session.payment_intent) {
       if (typeof session.payment_intent === "string") return session.payment_intent;
       if (session.payment_intent.id) return session.payment_intent.id;
@@ -57,15 +47,11 @@ export default function DonateSuccess() {
     return session.id || "—";
   }
 
-  // compute amount and currency from multiple possible places that Stripe may provide
   const amountRaw = (() => {
     if (!info) return null;
-    // Try fields commonly present on session
     if (info.amount_total != null) return info.amount_total;
-    // older shape or line items
     const displayAmount = info.display_items?.[0]?.amount;
     if (displayAmount != null) return displayAmount;
-    // payment_intent amount fallback
     if (info.payment_intent?.amount != null) return info.payment_intent.amount;
     return null;
   })();
@@ -74,7 +60,6 @@ export default function DonateSuccess() {
     if (!info) return null;
     if (info.currency) return info.currency;
     if (info.payment_intent?.currency) return info.payment_intent.currency;
-    // fallback to 'usd'
     return "usd";
   })();
 
@@ -89,7 +74,6 @@ export default function DonateSuccess() {
 
   const createdAt = (() => {
     if (!info) return null;
-    // prefer payment_intent.created (seconds) then session.created
     if (info.payment_intent?.created) return info.payment_intent.created;
     if (info.created) return info.created;
     return null;
@@ -133,7 +117,6 @@ export default function DonateSuccess() {
     <div className="min-h-screen bg-[#f8fbf9] flex items-start justify-center py-14 px-4">
       <div className="w-full max-w-3xl bg-white rounded-2xl shadow-lg border border-neutral-200 overflow-hidden">
         <div className="p-8 md:p-12">
-          {/* Header with animated check */}
           <div className="flex items-center gap-6">
             <div aria-hidden className="w-20 h-20 flex items-center justify-center">
               <svg className="w-20 h-20" viewBox="0 0 120 120" fill="none" aria-hidden>
@@ -154,7 +137,6 @@ export default function DonateSuccess() {
             </div>
           </div>
 
-          {/* Info boxes */}
           <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-[#f6f9f7] p-4 rounded-lg border border-[#eef8f1]">
               <div className="text-xs text-neutral-500">Status</div>
@@ -192,7 +174,6 @@ export default function DonateSuccess() {
             </div>
           </div>
 
-          {/* Actions */}
           <div className="mt-6 flex items-center gap-3">
             <button onClick={handlePrint} className="px-4 py-2 rounded-md bg-neutral-100 border text-sm hover:bg-neutral-50">Print Receipt</button>
             <a href="/" className="px-4 py-2 rounded-md bg-primary text-white text-sm hover:bg-primary/90">Back to Home</a>
@@ -202,7 +183,6 @@ export default function DonateSuccess() {
             </div>
           </div>
 
-          {/* Optional debug JSON */}
           {info && (
             <details className="mt-6 p-4 bg-white border rounded-md text-xs text-neutral-600">
               <summary className="cursor-pointer select-none">Show session payload (debug)</summary>
@@ -212,7 +192,6 @@ export default function DonateSuccess() {
         </div>
       </div>
 
-      {/* Inline styles for SVG animations */}
       <style>{`
         .circle-stroke {
           stroke-dasharray: 360;

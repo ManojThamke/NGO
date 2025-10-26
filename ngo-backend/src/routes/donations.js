@@ -11,6 +11,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
   console.warn('⚠️ STRIPE_SECRET_KEY is not set. Stripe operations will fail until this is configured.');
 }
 
+// initialize stripe (empty string allowed but will error on calls)
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
 const router = express.Router();
@@ -61,13 +62,16 @@ router.post('/create-checkout-session', async (req, res) => {
 
     const line_items = [{ price_data, quantity: 1 }];
 
-    const clientUrl = process.env.CLIENT_URL || 'https://ngo-frontend1.onrender.com';
+    // Use the CLIENT_URL env if set; otherwise use your Render frontend URL by default
+    const DEFAULT_CLIENT_URL = 'https://ngo-frontend1.onrender.com';
+    const clientUrl = (process.env.CLIENT_URL || DEFAULT_CLIENT_URL).replace(/\/$/, '');
+
     const sessionParams = {
       payment_method_types: ['card'],
       mode: recurring ? 'subscription' : 'payment',
       line_items,
-      success_url: `${clientUrl.replace(/\/$/, '')}/donate/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${clientUrl.replace(/\/$/, '')}/donate/cancel`,
+      success_url: `${clientUrl}/donate/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${clientUrl}/donate/cancel`,
       metadata: { email: email || '' }
     };
     if (email) sessionParams.customer_email = email;
