@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens */
+:root{
+  --color-primary: #0B6E4F;
+  --color-accent:  #F59E0B;
+  --color-neutral-900: #0F172A;
+  --color-bg: #F8FAFC;
+}
+
+/* Base */
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-neutral-900);
+}
+
+/* Utility helper if you need */
+.container {
+  max-width: 1200px;
+}

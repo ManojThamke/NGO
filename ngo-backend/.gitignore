@@ -1,0 +1,78 @@
+# -------------------------------
+# 🚀 NGO Backend – .gitignore
+# -------------------------------
+
+# Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs
+*.log
+logs/*.log
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Build and cache directories
+dist/
+build/
+.cache/
+.tmp/
+coverage/
+
+# IDE / Editor settings
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.DS_Store
+
+# OS specific files
+Thumbs.db
+.DS_Store
+ehthumbs.db
+Icon?
+
+# Optional runtime data
+*.seed
+*.tgz
+
+# PM2 process logs
+pmlog.log
+pids/
+*.pid
+
+# Optional local testing files
+test-results/
+__tests__/
+__mocks__/
+
+# Stripe webhook secret test logs
+stripe-logs/
+stripe-events.json
+
+# Backup files
+*.bak
+*.old
+*.orig
+
+# Local database files
+data/
+*.db
+
+# Environment config backups
+.env.bak
+.env.example
