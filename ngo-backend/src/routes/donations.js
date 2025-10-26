@@ -49,8 +49,6 @@ router.post('/create-checkout-session', async (req, res) => {
         createdAt: { $gte: new Date(Date.now() - 1000 * 60 * 10) } // last 10 minutes
       }).lean().exec();
       if (recentPending) {
-        // return existing session url if available to avoid creating duplicates
-        // (You may remove this behavior if not desired)
         return res.json({ ok: true, sessionId: recentPending.stripeSessionId });
       }
     }
@@ -63,13 +61,13 @@ router.post('/create-checkout-session', async (req, res) => {
 
     const line_items = [{ price_data, quantity: 1 }];
 
-    // create a checkout session
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
     const sessionParams = {
       payment_method_types: ['card'],
       mode: recurring ? 'subscription' : 'payment',
       line_items,
-      success_url: `${process.env.CLIENT_URL || 'https://ngo-frontend1.onrender.com'}/donate/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL || 'https://ngo-frontend1.onrender.com'}/donate/cancel`,
+      success_url: `${clientUrl.replace(/\/$/, '')}/donate/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${clientUrl.replace(/\/$/, '')}/donate/cancel`,
       metadata: { email: email || '' }
     };
     if (email) sessionParams.customer_email = email;
@@ -86,19 +84,15 @@ router.post('/create-checkout-session', async (req, res) => {
       recurring: !!recurring
     });
 
-    // Prefer to return session.url when available (newer Stripe)
     res.json({ ok: true, sessionId: session.id, url: session.url || null });
   } catch (err) {
-    // Log full error server-side for debugging
     console.error('create-checkout-session error:', err);
-
-    // Return detailed message in development, generic in production
     const devMsg = process.env.NODE_ENV === 'production' ? 'Server error' : (err.message || 'Server error');
     res.status(500).json({ error: devMsg });
   }
 });
 
-// Optional: fetch session details (server-verified)
+// GET /api/donations/session/:id
 router.get('/session/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -116,16 +110,26 @@ router.get('/session/:id', async (req, res) => {
 
 /**
  * Stripe webhook.
- * This route uses raw body to verify signature.
- * Make sure Stripe webhook forwarding (stripe CLI or production webhook) is configured.
+ * Uses raw body for signature verification.
  */
 router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   try {
-    if (!process.env.STRIPE_WEBHOOK_SECRET) {
-      console.warn('⚠️ STRIPE_WEBHOOK_SECRET not configured. Webhook signature verification will fail.');
+    let event;
+
+    if (process.env.STRIPE_WEBHOOK_SECRET) {
+      // verify signature in production / when secret present
+      event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    } else {
+      // WARNING: only for local/dev testing (no signature). Prefer configuring STRIPE_WEBHOOK_SECRET.
+      console.warn('⚠️ STRIPE_WEBHOOK_SECRET not configured. Webhook signature NOT verified (dev only).');
+      try {
+        event = JSON.parse(req.body.toString('utf8'));
+      } catch (parseErr) {
+        console.error('Failed to parse webhook body without verification', parseErr);
+        return res.status(400).send('Invalid webhook payload');
+      }
     }
-    const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
 
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -170,7 +174,6 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
     res.json({ received: true });
   } catch (err) {
     console.error('Webhook handler error:', err && err.message ? err.message : err);
-    // Stripe expects a 4xx or 5xx for failures
     res.status(400).send(`Webhook error: ${err && err.message ? err.message : 'invalid event'}`);
   }
 });
