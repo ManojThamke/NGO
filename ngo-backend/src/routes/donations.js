@@ -68,8 +68,8 @@ router.post('/create-checkout-session', async (req, res) => {
       payment_method_types: ['card'],
       mode: recurring ? 'subscription' : 'payment',
       line_items,
-      success_url: `${process.env.CLIENT_URL || 'https://ngo-backend1.onrender.com'}/donate/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL || 'https://ngo-backend1.onrender.com'}/donate/cancel`,
+      success_url: `${process.env.CLIENT_URL || 'https://ngo-frontend1.onrender.com'}/donate/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.CLIENT_URL || 'https://ngo-frontend1.onrender.com'}/donate/cancel`,
       metadata: { email: email || '' }
     };
     if (email) sessionParams.customer_email = email;
